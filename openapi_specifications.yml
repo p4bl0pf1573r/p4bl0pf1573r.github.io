@@ -1,0 +1,128 @@
+openapi: 3.0.0
+servers:
+  - url: https://dev.api.edgelab.ch/
+    description: Dev server
+
+
+info:
+  version: "0.1.0"
+  title: "Technical indicators API"
+  description: "The REST API to interact with the technical indicators API from Edgelab."
+  contact:
+    email: ppfister@edgelab.ch
+
+
+tags:
+  - name: TA
+    description: Technical indicators
+
+
+paths:
+  /technical_indicator:
+    post:
+      tags:
+        - TA
+      summary: "Request the technical indicator for a given asset"
+      operationId: post_technical_indicator
+      parameters:
+        - name: apikey
+          in: header
+          schema:
+            type: string
+            example: "3z278had-29ws-3222-0ad4-327adb83321c"
+          required: true
+        - name: asset
+          in: query
+          schema:
+            type: string
+            example: "isin/US0378331005"
+          description: "The asset for which to return the technical indicator. This asset shall be provided in the Edgelab API's standard format."
+          required: true
+        - name: time
+          in: query
+          schema:
+            type: string
+            enum: ["data", "business", "physical"]
+          description: "The time scale on which to evaluate the technical indicator. There are three options: data time (one evaluation for each data point of the underlying time serie), business time (one evaluation for each business day), physical time (one evaluation for each calendar day)."
+          required: true
+        - name: indicator
+          in: query
+          schema:
+            type: string
+            example: "BB(20,2) - P + RSI(14) - 50"
+          description: "The complete formula that describes a standard or composed technical indicator. Extensive documentation on how to use this formula is provided in a separate documentation."
+          required: true
+        - name: from
+          in: query
+          schema:
+            type: string
+            example: "2020-01-01"
+          description: "Return (if possible) datapoints starting from this date (included). The format of the date should be YYYY-MM-DD."
+          required: true
+        - name: to
+          in: query
+          schema:
+            type: string
+            example: "2021-12-31"
+          description: "Return (if possible) datapoints till this date (included). The format of the date should be YYYY-MM-DD."
+          required: true
+
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+        '400':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorized'
+
+components:
+  schemas:
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        indicator:
+          type: array
+          items:
+            type: array
+            items:
+              oneOf:
+                - type: string
+                - type: number
+          example: [["2021-02-23", 123], ["2021-02-22", 119]]
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Invalid indicator formula"
+
+    ErrorUnauthorized:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Unauthorized, the provided API key doesn't give access to this endpoint."
